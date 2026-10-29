@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta
+      name="description"
+      content="Meine Garage – die moderne Fahrzeugverwaltung als Progressive Web App."
+    />
+    <meta name="theme-color" content="#f2f2f7" />
+    <script>
+      // Apply before the app loads to avoid a flash of the wrong appearance.
+      let preference = 'system'
+      try {
+        const storedPreference = localStorage.getItem('garage-theme')
+        if (['system', 'light', 'dark'].includes(storedPreference)) {
+          preference = storedPreference
+        }
+      } catch {
+        // Use the system appearance if storage is unavailable.
+      }
+      const isDark = preference === 'dark' ||
+        (preference === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+      const theme = isDark ? 'dark' : 'light'
+      document.documentElement.dataset.theme = theme
+      document.documentElement.style.colorScheme = theme
+    </script>
+    <title>Meine Garage</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

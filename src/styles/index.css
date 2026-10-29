@@ -1,0 +1,191 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-app: var(--app-background);
+  --color-sidebar: var(--sidebar-background);
+  --color-surface: var(--surface-background);
+  --color-fill: var(--fill-background);
+  --color-label: var(--label-primary);
+  --color-label-secondary: var(--label-secondary);
+  --color-label-tertiary: var(--label-tertiary);
+  --color-separator: var(--separator-color);
+  --color-accent: var(--accent-color);
+  --color-accent-muted: var(--accent-muted);
+  --color-danger: var(--danger-color);
+  --font-sans: var(--font-system);
+}
+
+:root,
+:root[data-theme="light"] {
+  --app-background: #f2f2f7;
+  --sidebar-background: #f2f2f7;
+  --surface-background: #ffffff;
+  --fill-background: rgb(120 120 128 / 0.12);
+  --label-primary: #111111;
+  --label-secondary: rgb(60 60 67 / 0.68);
+  --label-tertiary: rgb(60 60 67 / 0.3);
+  --separator-color: rgb(60 60 67 / 0.22);
+  --accent-color: #007aff;
+  --accent-muted: rgb(0 122 255 / 0.1);
+  --danger-color: #b42318;
+  --glass-background: rgb(246 246 249 / 0.72);
+  --glass-background-strong: rgb(250 250 252 / 0.82);
+  --glass-fallback: #f7f7fa;
+  --glass-border: rgb(255 255 255 / 0.82);
+  --glass-highlight: rgb(255 255 255 / 0.92);
+  --glass-shadow: rgb(15 23 42 / 0.12);
+  --glass-control-active: rgb(255 255 255 / 0.68);
+  --glass-control-hover: rgb(255 255 255 / 0.42);
+}
+
+:root[data-theme="dark"] {
+  --app-background: #000000;
+  --sidebar-background: #111113;
+  --surface-background: #1c1c1e;
+  --fill-background: rgb(120 120 128 / 0.24);
+  --label-primary: #ffffff;
+  --label-secondary: rgb(235 235 245 / 0.65);
+  --label-tertiary: rgb(235 235 245 / 0.3);
+  --separator-color: rgb(84 84 88 / 0.65);
+  --accent-color: #0a84ff;
+  --accent-muted: rgb(10 132 255 / 0.18);
+  --danger-color: #ff8a80;
+  --glass-background: rgb(31 31 34 / 0.72);
+  --glass-background-strong: rgb(38 38 41 / 0.82);
+  --glass-fallback: #1c1c1e;
+  --glass-border: rgb(255 255 255 / 0.14);
+  --glass-highlight: rgb(255 255 255 / 0.18);
+  --glass-shadow: rgb(0 0 0 / 0.42);
+  --glass-control-active: rgb(255 255 255 / 0.12);
+  --glass-control-hover: rgb(255 255 255 / 0.08);
+}
+
+:root {
+  --font-system: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+    "Helvetica Neue", "Segoe UI", sans-serif;
+  font-family: var(--font-system);
+  color: var(--label-primary);
+  background: var(--app-background);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  min-width: 320px;
+  min-height: 100%;
+  background: var(--app-background);
+}
+
+body {
+  min-width: 320px;
+  min-height: 100dvh;
+  margin: 0;
+  background: var(--app-background);
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  color: #ffffff;
+  background: var(--accent-color);
+}
+
+@layer components {
+  .auth-fields {
+    @apply overflow-hidden rounded-[18px] border border-separator bg-surface;
+  }
+
+  .auth-primary {
+    @apply min-h-11 w-full rounded-xl bg-accent px-4 py-3 text-base font-semibold text-white transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-wait disabled:opacity-50;
+  }
+
+  .auth-secondary {
+    @apply inline-flex min-h-11 items-center rounded-md py-2 text-sm font-medium text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-50;
+  }
+
+  .list-row + .list-row .list-row-content {
+    border-top: 1px solid var(--separator-color);
+  }
+}
+
+.liquid-glass {
+  isolation: isolate;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-background);
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    0 10px 28px var(--glass-shadow);
+  -webkit-backdrop-filter: saturate(165%) blur(24px);
+  backdrop-filter: saturate(165%) blur(24px);
+}
+
+.liquid-glass-strong {
+  background: var(--glass-background-strong);
+  -webkit-backdrop-filter: saturate(180%) blur(30px);
+  backdrop-filter: saturate(180%) blur(30px);
+}
+
+.glass-control-active {
+  background: var(--glass-control-active);
+  box-shadow: inset 0 1px 0 var(--glass-highlight);
+}
+
+.glass-control-hover:hover {
+  background: var(--glass-control-hover);
+}
+
+.mobile-tab-bar {
+  right: max(0.625rem, env(safe-area-inset-right));
+  bottom: max(0.5rem, env(safe-area-inset-bottom));
+  left: max(0.625rem, env(safe-area-inset-left));
+}
+
+.animate-page-in {
+  animation: page-in 180ms ease-out both;
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .liquid-glass,
+  .liquid-glass-strong {
+    border-color: var(--separator-color);
+    background: var(--glass-fallback);
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .liquid-glass,
+  .liquid-glass-strong {
+    background: var(--glass-fallback);
+  }
+}
