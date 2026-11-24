@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 const checkout = fileURLToPath(new URL('../vendor/LiquidLens', import.meta.url))
@@ -10,14 +11,20 @@ function git(args) {
 }
 
 const head = git(['rev-parse', 'HEAD'])
-if (head.status !== 0 || head.stdout.trim() !== revision) {
+const diff = git([
+  'diff', '--no-ext-diff', '--no-textconv', '--no-color', '--abbrev=7',
+  '--src-prefix=a/', '--dst-prefix=b/', revision, '--',
+])
+if (head.status !== 0 || diff.status !== 0) {
   throw new Error(`LiquidLens fehlt oder hat einen anderen Stand. Submodul auf ${revision} initialisieren; siehe docs/liquidlens.md.`)
 }
 
-if (git(['apply', '--reverse', '--check', patch]).status === 0) {
+const normalize = (value) => value.replaceAll('\r\n', '\n').trimEnd()
+const expectedDiff = readFileSync(patch, 'utf8')
+if (normalize(diff.stdout) === normalize(expectedDiff)) {
   console.log('LiquidLens: geprüfte Patches bereits vorhanden.')
 } else {
-  if (git(['apply', '--check', patch]).status !== 0) {
+  if (head.stdout.trim() !== revision || diff.stdout || git(['apply', '--check', patch]).status !== 0) {
     throw new Error('LiquidLens enthält unerwartete Änderungen. Es wurde nichts überschrieben; siehe docs/liquidlens.md.')
   }
   const result = git(['apply', patch])

@@ -19,9 +19,10 @@ git submodule update --init --recursive
 npm ci
 ```
 
-`postinstall` führt `scripts/prepare-liquidlens.mjs` aus. Das Skript prüft den
-gepinnten Commit und wendet `vendor/liquidlens.patch` idempotent an. Bei
-unerwarteten Änderungen bricht es ab und überschreibt nichts. Manuell lässt es
+`postinstall` führt `scripts/prepare-liquidlens.mjs` aus. Das Skript wendet
+`vendor/liquidlens.patch` auf den unveränderten, gepinnten Commit an und
+akzeptiert einen lokalen Stand, dessen Diff genau dem Patch entspricht. Bei
+unerwarteten Änderungen bricht es ab. Manuell lässt es
 sich mit `npm run vendor:prepare` aufrufen. Weder das Skript noch die App laden
 Code zur Laufzeit von einem CDN.
 
