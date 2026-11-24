@@ -15,21 +15,24 @@ TypeScript, Vite und Tailwind CSS.
 - Installierbare PWA-Basis mit Web-App-Manifest und Service Worker
 - Supabase Auth: Registrierung, E-Mail-Bestätigung, Login, Logout und Passwort-Reset
 - Geschützte App-Routen, persistente Sitzung und Profil mit optionalem Anzeigenamen
+- Fahrzeugarten mit Standardfeldern, eigenen Arten und persönlichen Felddefinitionen
 - TypeScript im Strict-Modus
 - ESLint mit Regeln für TypeScript und React Hooks
 
-Fahrzeugfunktionen und eigene Datenbanktabellen sind noch nicht enthalten.
-Benutzerprofile verwenden ausschließlich Supabase-Auth-Metadaten.
+Einzelne Fahrzeuge, Tankvorgänge und Reparaturen sind noch nicht enthalten.
+Benutzerprofile verwenden ausschließlich Supabase-Auth-Metadaten. Fahrzeugarten
+und Felddefinitionen werden in eigenen, durch RLS geschützten Tabellen gespeichert.
 
 ## Voraussetzungen
 
-- Node.js 22.18 oder neuer
+- Git, Node.js 22 ab 22.18 oder Node.js ab 24
 - npm 10 oder neuer
 
 ## Lokal starten
 
 ```bash
-npm install
+git submodule update --init --recursive
+npm ci
 npm run dev
 ```
 
@@ -80,6 +83,9 @@ src/
 | `/add` | Hinzufügen |
 | `/statistics` | Statistiken |
 | `/settings` | Einstellungen und Erscheinungsbild |
+| `/settings/vehicle-types` | Fahrzeugarten und persönliche Felder |
+| `/settings/vehicle-types/new` | Eigene Fahrzeugart erstellen |
+| `/settings/vehicle-types/:typeId` | Art und Felder verwalten |
 | `/login` | Anmeldung |
 | `/register` | Registrierung |
 | `/forgot-password` | Reset-E-Mail anfordern |
@@ -97,15 +103,15 @@ Passwortwechsel, auch wenn ein angepasster Link auf einer anderen App-Route land
 
 1. Ein Supabase-Projekt erstellen. Unter **Connect** die Projekt-URL und unter
    **Settings → API Keys** den **Publishable Key** (`sb_publishable_…`) kopieren.
-2. In der bereits angelegten `.env.local` die beiden leeren Werte ausfüllen:
+2. Falls `.env.local` fehlt, `.env.example` dorthin kopieren. In `.env.local`
+   die beiden Werte eintragen:
 
    ```dotenv
    VITE_SUPABASE_URL=https://DEIN-PROJEKT.supabase.co
    VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_DEIN_OEFFENTLICHER_KEY
    ```
 
-   `.env.local` ist ignoriert. Für neue Checkouts `.env.example` nach `.env.local`
-   kopieren. **Niemals Secret-Keys oder Service-Role-Keys eintragen.** Vite stellt
+   `.env.local` ist ignoriert. **Niemals Secret-Keys oder Service-Role-Keys eintragen.** Vite stellt
    `VITE_`-Werte dem Browser zur Verfügung. Start und Build weisen ungültige
    Konfigurationen zurück; ohne beide Werte zeigt die App einen Einrichtungshinweis.
 3. Unter **Authentication → Sign In / Providers → Email** E-Mail/Passwort und
@@ -127,14 +133,14 @@ Passwortwechsel, auch wenn ein angepasster Link auf einer anderen App-Route land
    nur Adressen von Projekt-/Organisationsteammitgliedern und ist stark limitiert.
 7. Vite nach Änderungen an `.env.local` neu starten: `npm run dev`.
 
-Es sind keine SQL-Migrationen und keine Profiltabelle erforderlich. Der Anzeigename
+Für Benutzerprofile ist keine eigene Tabelle erforderlich. Der Anzeigename
 liegt in `user_metadata.display_name`; die E-Mail stammt aus Supabase Auth.
 Metadaten dürfen nicht für Berechtigungsprüfungen genutzt werden. Die Sitzung
 wird vom SDK im Browser verwaltet, automatisch erneuert und zwischen Tabs
 synchronisiert. Logout meldet die aktuelle Sitzung auf diesem Gerät ab.
 
-Routenschutz sichert die Oberfläche, nicht zukünftige Datenbankabfragen. Sobald
-eigene Tabellen ergänzt werden, sind RLS und passende Policies erforderlich.
+Routenschutz sichert die Oberfläche, nicht Datenbankabfragen. Die Fahrzeugarten-
+Tabellen verwenden daher zusätzlich RLS und eingeschränkte Spaltenrechte.
 Der Service Worker speichert ausschließlich statische App-Dateien, keine
 Supabase-Antworten. Das Hosting muss SPA-Routen auf `index.html` zurückführen.
 
@@ -159,7 +165,31 @@ Die lokalen Tests prüfen Schlüsselvalidierung, sichere Rückleitungsziele und
 Fehlerbehandlung. Echte Auth- und E-Mail-Abläufe benötigen ein konfiguriertes
 Supabase-Projekt und ersetzen diese manuellen Prüfungen nicht.
 
+## Schritt 4: Fahrzeugarten-Datenbank einrichten
+
+Die zwei versionierten Migrationen unter `supabase/migrations` müssen in dieser
+Reihenfolge ausgeführt werden: zuerst Schema/RLS, danach Standardarten und Felder.
+Die genaue Anleitung, Berechtigungstests und der Vertrag für spätere Fahrzeugwerte
+stehen in [supabase/README.md](./supabase/README.md). Ohne diese Migrationen zeigt
+die Fahrzeugarten-Seite einen Einrichtungshinweis, statt Daten lokal zu speichern.
+
+Eigene Arten und Felder sind nur für ihren Besitzer sichtbar. Standardfelder
+bleiben unveränderbar; persönliche Zusatzfelder können ergänzt werden. Feldtypen:
+Text, Ganzzahl, Dezimalzahl, Datum, Ja/Nein und Dropdown mit eigenen Optionen.
+Bearbeitung erzeugt Revisionen; Löschen archiviert die Metadaten. Damit bleiben
+frühere Definitionen für spätere Fahrzeugwerte erhalten.
+
 Weitere Konventionen und Projektregeln stehen in [AGENTS.md](./AGENTS.md).
+
+## LiquidLens
+
+Navigation, primäre Buttons, schwebende Aktionen und Bestätigungsdialoge verwenden
+die echte LiquidLens-Core-/React-Implementierung aus `vendor/LiquidLens`.
+Nach einem frischen Checkout zunächst `git submodule update --init --recursive`,
+dann `npm ci` ausführen. Installation, Review, lokale Patches und Browserprüfungen
+sind in [docs/liquidlens.md](./docs/liquidlens.md) dokumentiert. LiquidLens ist ein
+Community-Projekt, keine Apple-Bibliothek. Refraction wird nur für unterstützte
+Chromium-Umgebungen aktiviert; andere Browser erhalten die dokumentierten Fallbacks.
 
 ## Erweiterungen
 
@@ -170,7 +200,7 @@ in `src/app/navigation.ts`. Sidebar und Tab-Bar nutzen dieselbe Liste.
 Seiten setzen kleine UI-Bausteine zusammen: `PageHeader` für Überschriften,
 `ListSection` und `ListRow` für gruppierte Listen. Fachliche Logik und Typen
 bleiben zunächst beim Feature; nur tatsächlich gemeinsam genutzter Code wird
-ausgelagert. Materialklassen wie `liquid-glass` bestimmen das Aussehen, während
+ausgelagert. Materialklassen wie `glass-surface` bestimmen das Aussehen, während
 die jeweilige Layout-Komponente ihre Positionierung festlegt.
 
 Der kurze Theme-Bootstrap in `index.html` verhindert ein Aufblitzen der falschen

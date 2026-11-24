@@ -4,6 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "postinstall": "node scripts/prepare-liquidlens.mjs",
+    "vendor:prepare": "node scripts/prepare-liquidlens.mjs",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
@@ -12,6 +14,7 @@
     "test": "node --experimental-strip-types --test tests/*.test.ts"
   },
   "dependencies": {
+    "@liquidlens/core": "file:vendor/LiquidLens/packages/core",
     "@supabase/supabase-js": "^2.112.3",
     "lucide-react": "^1.64.0",
     "react": "^19.3.1",

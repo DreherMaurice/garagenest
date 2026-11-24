@@ -1,0 +1,3 @@
+[submodule "vendor/LiquidLens"]
+	path = vendor/LiquidLens
+	url = https://github.com/DevBehindYou/LiquidLens.git

@@ -1,4 +1,7 @@
 @import "tailwindcss";
+@import "@liquidlens/core/tokens.css" layer(base);
+@import "@liquidlens/core/liquid-glass.css" layer(components);
+@source not "../../vendor";
 
 @theme inline {
   --color-app: var(--app-background);
@@ -28,14 +31,19 @@
   --accent-color: #007aff;
   --accent-muted: rgb(0 122 255 / 0.1);
   --danger-color: #b42318;
-  --glass-background: rgb(246 246 249 / 0.72);
-  --glass-background-strong: rgb(250 250 252 / 0.82);
+  --glass-background: rgb(246 246 249 / 0.18);
+  --glass-background-strong: rgb(250 250 252 / 0.24);
+  --glass-center-fill: rgb(250 250 252 / 0.84);
   --glass-fallback: #f7f7fa;
-  --glass-border: rgb(255 255 255 / 0.82);
+  --glass-border: rgb(255 255 255 / 0.50);
   --glass-highlight: rgb(255 255 255 / 0.92);
   --glass-shadow: rgb(15 23 42 / 0.12);
   --glass-control-active: rgb(255 255 255 / 0.68);
   --glass-control-hover: rgb(255 255 255 / 0.42);
+  --glass-action-color: #004fa8;
+  --glass-secondary-color: #515157;
+  --glass-danger-color: #b42318;
+  --glass-press-highlight-opacity: 1;
 }
 
 :root[data-theme="dark"] {
@@ -50,14 +58,19 @@
   --accent-color: #0a84ff;
   --accent-muted: rgb(10 132 255 / 0.18);
   --danger-color: #ff8a80;
-  --glass-background: rgb(31 31 34 / 0.72);
-  --glass-background-strong: rgb(38 38 41 / 0.82);
+  --glass-background: rgb(31 31 34 / 0.20);
+  --glass-background-strong: rgb(38 38 41 / 0.30);
+  --glass-center-fill: rgb(25 25 28 / 0.94);
   --glass-fallback: #1c1c1e;
-  --glass-border: rgb(255 255 255 / 0.14);
-  --glass-highlight: rgb(255 255 255 / 0.18);
+  --glass-border: rgb(255 255 255 / 0.22);
+  --glass-highlight: rgb(255 255 255 / 0.32);
   --glass-shadow: rgb(0 0 0 / 0.42);
   --glass-control-active: rgb(255 255 255 / 0.12);
   --glass-control-hover: rgb(255 255 255 / 0.08);
+  --glass-action-color: #add4ff;
+  --glass-secondary-color: #c7c7cc;
+  --glass-danger-color: #ffb4ab;
+  --glass-press-highlight-opacity: 0.14;
 }
 
 :root {
@@ -96,38 +109,86 @@ a {
 }
 
 @layer components {
-  .auth-fields {
+  .glass-surface {
+    --glass-legibility-inset: 10px;
+    --label-secondary: var(--glass-secondary-color);
+    --danger-color: var(--glass-danger-color);
+    --lg-font: var(--font-system);
+    --lg-fg: var(--label-primary);
+    --lg-fg-dim: var(--label-secondary);
+    --lg-shadow-inner: inset 0 1px 1px var(--glass-highlight), inset 0 -1px 1px var(--glass-border);
+    --lg-shadow-drop: 0 10px 28px var(--glass-shadow);
+    --lg-chroma-cool: rgb(120 180 255 / 0.08);
+    --lg-chroma-warm: rgb(255 180 190 / 0.05);
+    --lg-dur: 180ms;
+    background: var(--glass-background);
+    border: 1px solid var(--glass-border);
+    will-change: auto;
+  }
+
+  .glass-surface > .glass-legibility {
+    position: absolute;
+    z-index: 0;
+    inset: var(--glass-legibility-inset);
+    border-radius: max(0px, calc(var(--lg-radius) - var(--glass-legibility-inset)));
+    background: var(--glass-center-fill);
+    box-shadow: 0 0 5px 3px var(--glass-center-fill);
+    pointer-events: none;
+  }
+
+  .glass-surface [aria-current="page"] {
+    color: var(--glass-action-color);
+  }
+
+  .glass-button {
+    --glass-legibility-inset: 6px;
+    @apply inline-flex min-h-11 items-center justify-center px-5 py-3 text-base font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-wait disabled:opacity-50;
+    color: var(--glass-action-color);
+  }
+
+  .glass-button:disabled:active { transform: none; }
+  .glass-button:active::after { opacity: var(--glass-press-highlight-opacity); }
+
+  .glass-dialog {
+    --glass-legibility-inset: 12px;
+    position: fixed;
+    inset: 0;
+    margin: auto;
+    width: min(28rem, calc(100% - 2rem));
+    max-height: calc(100dvh - 3rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    overflow-y: auto;
+    padding: 0;
+    background: var(--glass-background-strong);
+  }
+
+  .glass-dialog::backdrop { background: rgb(0 0 0 / 0.28); }
+
+  .auth-fields,
+  .form-fields {
     @apply overflow-hidden rounded-[18px] border border-separator bg-surface;
   }
 
-  .auth-primary {
+  .auth-primary,
+  .form-primary {
     @apply min-h-11 w-full rounded-xl bg-accent px-4 py-3 text-base font-semibold text-white transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-wait disabled:opacity-50;
   }
 
-  .auth-secondary {
+  .auth-secondary,
+  .form-secondary {
     @apply inline-flex min-h-11 items-center rounded-md py-2 text-sm font-medium text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-50;
+  }
+
+  .form-control {
+    @apply min-h-9 w-full min-w-0 rounded-sm bg-surface text-base text-label outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-60;
+  }
+
+  .field-icon-button {
+    @apply grid size-11 place-items-center rounded-md text-accent focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-30;
   }
 
   .list-row + .list-row .list-row-content {
     border-top: 1px solid var(--separator-color);
   }
-}
-
-.liquid-glass {
-  isolation: isolate;
-  border: 1px solid var(--glass-border);
-  background: var(--glass-background);
-  box-shadow:
-    inset 0 1px 0 var(--glass-highlight),
-    0 10px 28px var(--glass-shadow);
-  -webkit-backdrop-filter: saturate(165%) blur(24px);
-  backdrop-filter: saturate(165%) blur(24px);
-}
-
-.liquid-glass-strong {
-  background: var(--glass-background-strong);
-  -webkit-backdrop-filter: saturate(180%) blur(30px);
-  backdrop-filter: saturate(180%) blur(30px);
 }
 
 .glass-control-active {
@@ -162,6 +223,11 @@ a {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .glass-surface {
+    --lg-lx: 50%;
+    --lg-ly: 20%;
+    --lg-edge: 140deg;
+  }
   *,
   *::before,
   *::after {
@@ -173,19 +239,22 @@ a {
 }
 
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
-  .liquid-glass,
-  .liquid-glass-strong {
+  .glass-surface {
     border-color: var(--separator-color);
     background: var(--glass-fallback);
     box-shadow: none;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
   }
+  .glass-surface::before, .glass-surface::after { display: none; }
+  .glass-surface > .glass-legibility { display: none; }
 }
 
 @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
-  .liquid-glass,
-  .liquid-glass-strong {
+  .glass-surface {
     background: var(--glass-fallback);
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
   }
+  .glass-surface > .glass-legibility { display: none; }
 }

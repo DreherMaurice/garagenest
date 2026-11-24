@@ -7,8 +7,8 @@ sollen klein, nachvollziehbar und auf den jeweils beauftragten Ausbauschritt
 begrenzt bleiben.
 
 Schritt 3 ergänzt Supabase Auth und Benutzerprofile über Auth-Metadaten.
-Fahrzeugfunktionen und eigene Datenbanktabellen werden erst nach ausdrücklichem
-Auftrag ergänzt.
+Schritt 4 ergänzt Fahrzeugarten, persönliche Felddefinitionen und deren Revisionen.
+Einzelne Fahrzeuge, Tankvorgänge und Reparaturen bleiben außerhalb des Umfangs.
 
 ## Technische Leitplanken
 
@@ -55,6 +55,12 @@ Auftrag ergänzt.
 - Glas-Effekte verwenden die zentralen Tokens und Fallbacks in
   `src/styles/index.css`; individuelle Blur- oder Transparenzwerte in
   Komponenten sind zu vermeiden.
+- LiquidLens ist unter `vendor/LiquidLens` gepinnt. Vor Glas-Änderungen dessen
+  `AI_CONTEXT.md`, die relevanten React-/Web-/Auditor-Skills und
+  `docs/liquidlens.md` lesen. Gemeinsame Wrapper und `glass-tokens.ts` verwenden.
+- Keine eigene Brechungsimplementierung. Vendor-Fixes als Patch im Hauptprojekt
+  dokumentieren. Browser-/Pixelprüfungen nicht durch Unit-Tests oder simulierte
+  User-Agents als erledigt ausgeben.
 - Semantisches HTML, sichtbare Fokuszustände, ausreichende Kontraste und
   sinnvolle zugängliche Namen sind verpflichtend.
 - Neue Texte werden standardmäßig auf Deutsch verfasst.
@@ -70,6 +76,11 @@ Auftrag ergänzt.
   serverseitige Autorisierung und RLS.
 - Auth-Tokens, Passwörter und E-Mail-Link-Fragmente nicht protokollieren oder
   in eigenen Speichern ablegen. Die Sitzungsverwaltung übernimmt der SDK.
+- Datenbankschema und Rechte versioniert unter `supabase/migrations` pflegen.
+  RLS muss auch den Zugriff auf die verknüpfte Fahrzeugart prüfen.
+- Fahrzeugarten und Felder werden archiviert. Feldrevisionen bleiben unveränderlich.
+  Spätere Fahrzeugwerte referenzieren die Revisions-ID mit `ON DELETE RESTRICT`;
+  kein Cascade-Löschen oder stilles Umdeuten vorhandener Werte.
 
 ## Qualitätssicherung
 

@@ -1,0 +1,167 @@
+diff --git a/packages/core/liquid-glass.js b/packages/core/liquid-glass.js
+index 567e1bc..a52b81f 100644
+--- a/packages/core/liquid-glass.js
++++ b/packages/core/liquid-glass.js
+@@ -57,6 +57,10 @@
+   var filterRoot = null;
+   var uid = 0;
+   var observers = [];
++  var resizeObserver = null;
++  var initialized = false;
++  var retryTimer = null;
++  var preferenceQueries = [];
+ 
+   var defaults = {
+     refraction: 18,   // feDisplacementMap scale (px) — edge bend strength
+@@ -144,13 +148,26 @@
+   }
+   function radiusOf(el) { return parseFloat(getComputedStyle(el).borderTopLeftRadius) || 24; }
+   function reducedTransparency() {
+-    return window.matchMedia && window.matchMedia('(prefers-reduced-transparency: reduce)').matches;
++    return window.matchMedia && (window.matchMedia('(prefers-reduced-transparency: reduce)').matches ||
++      window.matchMedia('(prefers-contrast: more)').matches);
++  }
++  function supportsRefraction() {
++    var ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
++    return /Chrome|Chromium|Edg|OPR/.test(ua) && !/Firefox|iPhone|iPad|iPod/.test(ua);
++  }
++  function release(el) {
++    if (resizeObserver) resizeObserver.unobserve(el);
++    var id = el.dataset && el.dataset.lgId;
++    var filter = id && document.getElementById(id);
++    if (filter) filter.remove();
++    el.style.removeProperty('backdrop-filter');
++    el.style.removeProperty('-webkit-backdrop-filter');
++    if (el.dataset) delete el.dataset.lgId;
+   }
+ 
+   /* ---- apply the material to a single element ---- */
+   function apply(el, opts) {
+-    if (reducedTransparency()) return; // CSS provides an opaque fallback; skip GPU work
+-    ensureRoot();
++    if (reducedTransparency()) { release(el); return; }
+     var ds = el.dataset || {};
+     var o = assign({}, state, opts, {
+       refraction: num(ds.lgRefraction, (opts && opts.refraction) != null ? opts.refraction : state.refraction),
+@@ -160,12 +177,23 @@
+     });
+     var rect = el.getBoundingClientRect();
+     var w = Math.round(rect.width), h = Math.round(rect.height);
+-    if (w < 4 || h < 4) return;
++    if (w < 4 || h < 4) { release(el); return; }
+     var isClear = el.classList.contains('lg-clear') || ds.glassVariant === 'clear';
+     var radius = Math.min(radiusOf(el), Math.min(w, h) / 2);
+     var bezel = Math.min(o.bezel, Math.min(w, h) / 2 - 1);
+     var scale = isClear ? o.refraction * 0.5 : o.refraction;
+ 
++    var blur = isClear ? Math.min(o.blur, 2) : o.blur;
++    var sat = isClear ? 1.4 : o.saturation;
++    var fallback = 'blur(' + blur + 'px) saturate(' + sat + ')';
++    if (!supportsRefraction()) {
++      release(el);
++      el.style.webkitBackdropFilter = fallback;
++      el.style.backdropFilter = fallback;
++      return;
++    }
++    ensureRoot();
++
+     var id = ds.lgId; if (!id) { id = 'lg' + (uid++); el.dataset.lgId = id; }
+     var map = makeDisplacementMap(w, h, radius, Math.max(2, bezel));
+ 
+@@ -180,8 +208,6 @@
+       '<feDisplacementMap in="SourceGraphic" in2="m" scale="' + scale + '" xChannelSelector="R" yChannelSelector="G"/>';
+     filterRoot.appendChild(f);
+ 
+-    var blur = isClear ? Math.min(o.blur, 2) : o.blur;
+-    var sat = isClear ? 1.4 : o.saturation;
+     var fx = 'blur(' + blur + 'px) saturate(' + sat + ') url(#' + id + ')';
+     el.style.webkitBackdropFilter = fx;
+     el.style.backdropFilter = fx;
+@@ -204,6 +230,7 @@
+ 
+   var pointerBound = false;
+   function onPointer(e) {
++    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+     var r = document.documentElement.style;
+     r.setProperty('--lg-lx', (e.clientX / innerWidth * 100).toFixed(1) + '%');
+     r.setProperty('--lg-ly', (e.clientY / innerHeight * 100).toFixed(1) + '%');
+@@ -222,12 +249,13 @@
+   }
+ 
+   function init(opts) {
++    if (initialized) { if (opts) set(opts); return api; }
++    initialized = true;
+     assign(state, opts); setVars(); bindMotion();
+-    var run = function () { applyAll(); setTimeout(applyAll, 150); };
+     if (document.readyState === 'complete') run(); else window.addEventListener('load', run);
+     window.addEventListener('resize', schedule);
+     if ('ResizeObserver' in window) {
+-      var ro = new ResizeObserver(schedule); observers.push(ro);
++      var ro = new ResizeObserver(schedule); observers.push(ro); resizeObserver = ro;
+       var list = document.querySelectorAll('[data-glass]');
+       for (var i = 0; i < list.length; i++) ro.observe(list[i]);
+     }
+@@ -237,19 +265,48 @@
+           var added = muts[j].addedNodes;
+           for (var k = 0; k < added.length; k++) {
+             var node = added[k];
+-            if (node.nodeType === 1 && (node.matches && node.matches('[data-glass]'))) { apply(node); }
++            if (node.nodeType !== 1 || !node.matches) continue;
++            if (node.matches('[data-glass]')) apply(node);
++            var nested = node.querySelectorAll('[data-glass]');
++            for (var n = 0; n < nested.length; n++) apply(nested[n]);
++          }
++          var removed = muts[j].removedNodes;
++          for (var r = 0; r < removed.length; r++) {
++            var old = removed[r];
++            if (old.nodeType !== 1 || !old.matches || old.isConnected) continue;
++            if (old.matches('[data-glass]')) release(old);
++            var descendants = old.querySelectorAll('[data-glass]');
++            for (var d = 0; d < descendants.length; d++) release(descendants[d]);
+           }
+         }
+       });
+       mo.observe(document.body, { childList: true, subtree: true }); observers.push(mo);
+     }
+-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(schedule);
++    ['(prefers-reduced-transparency: reduce)', '(prefers-contrast: more)'].forEach(function (query) {
++      var media = window.matchMedia(query);
++      media.addEventListener('change', schedule);
++      preferenceQueries.push(media);
++    });
++    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if (initialized) schedule(); });
+     return api;
+   }
+ 
++  function run() { applyAll(); retryTimer = setTimeout(applyAll, 150); }
++
+   function destroy() {
+     for (var i = 0; i < observers.length; i++) observers[i].disconnect();
+     observers = [];
++    resizeObserver = null;
++    initialized = false;
++    if (raf) cancelAnimationFrame(raf);
++    if (retryTimer) clearTimeout(retryTimer);
++    raf = null; retryTimer = null;
++    window.removeEventListener('load', run);
++    window.removeEventListener('resize', schedule);
++    preferenceQueries.forEach(function (media) { media.removeEventListener('change', schedule); });
++    preferenceQueries = [];
++    var elements = document.querySelectorAll('[data-glass]');
++    for (var e = 0; e < elements.length; e++) release(elements[e]);
+     window.removeEventListener('pointermove', onPointer);
+     window.removeEventListener('deviceorientation', onTilt);
+     if (filterRoot) { filterRoot.remove(); filterRoot = null; }
+diff --git a/packages/react/LiquidGlass.tsx b/packages/react/LiquidGlass.tsx
+index f54e79e..f4e1625 100644
+--- a/packages/react/LiquidGlass.tsx
++++ b/packages/react/LiquidGlass.tsx
+@@ -117,7 +117,7 @@ export interface LiquidGlassOwnProps {
+    * Render as a different intrinsic element (polymorphic). Default `'div'`.
+    * e.g. `as="button"`, `as="section"`, `as="a"`.
+    */
+-  as?: keyof JSX.IntrinsicElements;
++  as?: keyof React.JSX.IntrinsicElements;
+ }
+ 
+ /**
